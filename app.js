@@ -2,9 +2,12 @@ const http = require('http');
 const Koa = require('koa');
 // const Router = require('koa-router');
 // const bodyParser = require('koa-bodyparser');
+const logger = require('koa-logger');
 const socketIO = require('socket.io');
 
 const imJob = require('./imJob');
+const router = require('./route');
+const { authorizeIONext } = require('./middleware');
 
 const app = new Koa();
 
@@ -13,31 +16,19 @@ const io = socketIO(server);
 
 const PORT = 9877;
 
-app.use(async (ctx) => {
-  ctx.body = 'Hello World';
-});
+app.use(logger()).use(async (ctx, next) => {
+  // ctx.body = {
+  //   hello: 'world',
+  // };
+  await next();
+}).use(router.routes()).use(router.allowedMethods());
 
-io.use((socket, next) => {
-  if (socket.handshake.query && socket.handshake.query.phone) {
-    next();
-    // if (socket.handshake.query && socket.handshake.query.token){
-    //   jwt.verify(socket.handshake.query.token, 'SECRET_KEY', function(err, decoded) {
-    //     if(err) return next(new Error('Authentication error'));
-    //     socket.decoded = decoded;
-    //     next();
-    //   });
-  } else {
-    next(new Error('Authentication error'));
-  }
-}).on('connection', (socket) => {
+io.use(authorizeIONext()).on('connection', (socket) => {
   imJob.addSocket(socket);
   socket.on('message', imJob.addMessage.bind(imJob));
   socket.on('disconnect', () => {
     imJob.removeSocket(socket);
   });
-}).on('error', (err) => {
-  // eslint-disable-next-line no-console
-  console.log(err);
 });
 
 server.listen(PORT, () => {

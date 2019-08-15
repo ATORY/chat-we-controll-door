@@ -36,19 +36,20 @@ class IMJob extends EventEmitter {
   }
 
   addSocket(socket) {
-    const phone = socket.handshake.query && socket.handshake.query.phone;
-
-    const oldSocket = this.onLine[phone];
-    if (oldSocket) oldSocket.close();
-    else {
-      this.onLine[phone] = socket;
+    const { authInfo } = socket.handshake;
+    const { openID } = authInfo;
+    const oldSocket = this.onLine[openID];
+    if (oldSocket) {
+      oldSocket.disconnect(true);
+    } else {
+      this.onLine[openID] = socket;
       this.onLineCount += 1;
     }
   }
 
   removeSocket(socket) {
-    const phone = socket.handshake.query && socket.handshake.query.phone;
-    this.onLine[phone] = null;
+    const { authInfo: { openID } } = socket.handshake;
+    this.onLine[openID] = '';
     this.onLineCount -= 1;
   }
 

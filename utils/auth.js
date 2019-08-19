@@ -9,7 +9,7 @@ const jwtSign = util.promisify(jwt.sign);
 const jwtVerify = util.promisify(jwt.verify);
 
 exports.tokenGen = async ({ userInfo, role = 0 }) => { // role 0 游客，1 注册用户
-  const tokenStr = await jwtSign({ role, ...userInfo }, APP_SECRET);
+  const tokenStr = await jwtSign({ role, info: userInfo }, APP_SECRET);
   return tokenStr;
 };
 

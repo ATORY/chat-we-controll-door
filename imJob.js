@@ -36,8 +36,8 @@ class IMJob extends EventEmitter {
   }
 
   addSocket(socket) {
-    const { authInfo } = socket.handshake;
-    const { openID } = authInfo;
+    const { info } = socket.handshake.authInfo;
+    const { openID } = info;
     const oldSocket = this.onLine[openID];
     if (oldSocket) {
       oldSocket.disconnect(true);
@@ -48,15 +48,30 @@ class IMJob extends EventEmitter {
   }
 
   removeSocket(socket) {
-    const { authInfo: { openID } } = socket.handshake;
+    const { info: { openID } } = socket.handshake.authInfo;
     this.onLine[openID] = '';
     this.onLineCount -= 1;
   }
 
-  addMessage(message) {
+  addMessage(message, from) {
     const id = uuidv4();
     const serverTime = Date.now();
-    this.messagePool.messages.push({ id, serverTime, ...message });
+    const { to } = message;
+    const msg = {
+      id,
+      serverTime,
+      from,
+      ...message,
+    };
+    const existItem = this.messagePool.messages.find((item) => item.to === to);
+    if (existItem) {
+      existItem.data.push(msg);
+    } else {
+      this.messagePool.messages.push({
+        to,
+        data: [msg],
+      });
+    }
   }
 
   consumeQueue() {
@@ -69,13 +84,11 @@ class IMJob extends EventEmitter {
     const { failMessages } = this;
     this.failMessages = [];
     [...failMessages, ...messages].forEach((message) => {
-      const { to } = message;
+      const { to, data } = message;
       // console.log(message);
       const onLineSocket = this.onLine[to];
-      if (onLineSocket) {
-        // console.log('online', message);
-        onLineSocket.emit('message', message);
-      } else this.failMessages.push(message);
+      if (onLineSocket) onLineSocket.emit('message', data);
+      else this.failMessages.push(message);
     });
   }
 

@@ -25,7 +25,11 @@ app.use(logger()).use(async (ctx, next) => {
 
 io.use(authorizeIONext()).on('connection', (socket) => {
   imJob.addSocket(socket);
-  socket.on('message', imJob.addMessage.bind(imJob));
+  socket.on('message', (message) => {
+    const from = socket.handshake.authInfo.info;
+    // console.log(from);
+    imJob.addMessage(message, from);
+  });
   socket.on('disconnect', () => {
     imJob.removeSocket(socket);
   });

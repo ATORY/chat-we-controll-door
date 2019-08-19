@@ -16,6 +16,8 @@ router.post('/loginasvisitor', async (ctx) => {
   const openID = Buffer.from(uuidv4()).toString('base64');
   const info = {
     openID,
+    nickname: '游客',
+    avator: '',
   };
   const token = await tokenGen({ role: auth, userInfo: info });
   ctx.body = {
@@ -37,6 +39,20 @@ router.get('/auth', async (ctx) => {
       ...authInfo,
     },
     auth: authInfo.role,
+  };
+});
+
+router.get('/chats', async (ctx) => {
+  // const { authInfo } = ctx;
+  ctx.body = {
+    chats: [
+      {
+        id: '12345678912',
+        type: '',
+        name: '广场',
+        chatMsg: [],
+      },
+    ],
   };
 });
 
